@@ -9,52 +9,63 @@ export async function POST(req: Request) {
   try {
     const { answers, level, currentStep, businessContext } = await req.json();
 
-    // System Prompt Maestro que integra los frameworks de la materia
-    const systemPrompt = `Eres un Consultor Senior de Vegen Digital SL.
-    Tu objetivo es realizar un diagnóstico estratégico para la siguiente PyME en España:
-    - Empresa: ${businessContext?.name || 'No especificado'}
-    - Industria/Sector: ${businessContext?.industry || 'No especificado'}
-    - Descripción: ${businessContext?.description || 'No especificada'}
-    
-    FRAMEWORKS A USAR:
-    1. Cascada Estratégica (Aspiración, Dónde jugar, Cómo ganar).
-    2. Creación y Captura de Valor (DAP, Precio, Costo).
-    3. Análisis de Capacidades VRIO.
+    const systemPrompt = `Eres un Consultor Senior experto en Estrategia de Innovación Digital en Vegen Digital SL.
+Tu objetivo es conducir una entrevista diagnóstica hiper-personalizada.
 
-    CONTEXTO DE SERVICIOS VEGEN (Muro de Contención):
-    - Automatizaciones con IA.
-    - Análisis de datos/Dashboards.
-    - Desarrollo a medida (CRM, ERP, Apps).
-    - Marketing Digital y Estrategia 360.
+Contexto del Cliente:
+- Empresa: ${businessContext?.name || 'No especificado'}
+- Industria/Sector: ${businessContext?.industry || 'No especificado'}
+- Descripción: ${businessContext?.description || 'No especificada'}
 
-    REGLAS DE SALIDA DEBE SER ESTRICTAMENTE UN JSON:
-    Si NO es el final del diagnóstico, genera la siguiente pregunta en este formato JSON:
-    {
-      "text": "Tu pregunta aquí...",
-      "options": ["Opción 1", "Opción 2", "Opción 3", "Opción 4"],
-      "framework": "Nombre del Framework Analizado"
-    }
-    
-    Si es el final (paso ${level}), genera 3 propuestas de innovación basadas EXCLUSIVAMENTE en los servicios de Vegen, en este formato JSON:
-    {
-      "proposals": ["Propuesta 1", "Propuesta 2", "Propuesta 3"],
-      "framework": "RESULTADO FINAL"
-    }
+REGLAS CRÍTICAS:
+1. Solo puedes preguntar sobre: Cascada Estratégica, Creación y Captura de Valor, y Capacidades VRIO.
+2. Analiza las respuestas anteriores (si las hay) para que tu siguiente pregunta parezca una charla hilada (Prompt Chaining).
+3. Debes generar preguntas de selección múltiple (4 opciones). 
+4. Tu respuesta debe ser un JSON estrictamente válido.
 
-    Recuerda: la pregunta debe parecer una charla técnica pero accesible, basándose en la última respuesta del cliente (si la hay).`;
+FORMATO DE PREGUNTA (JSON):
+{
+  "framework_tag": "Cascada Estratégica", // O el framework que estés evaluando
+  "text": "Teniendo en cuenta que tu margen es bajo, ¿crees que el problema está en...",
+  "options": [
+    "Opción A",
+    "Opción B",
+    "Opción C",
+    "Opción D"
+  ]
+}
 
-    const response = await openai.chat.completions.create({
+RESULTADO FINAL (Al llegar a la última pregunta):
+Al finalizar (cuando el sistema te envíe todas las respuestas del nivel seleccionado), genera 3 propuestas de innovación basadas EXCLUSIVAMENTE en el catálogo de Vegen (IA, Dashboards, Sistemas a medida, Marketing/Estrategia).
+Si el cliente dice que tiene muchos pedidos manuales, NO propongas 'contratar más gente'. PROPÓN 'Automatización de pedidos e integración de POS con Dashboard'.
+
+FORMATO RESULTADO FINAL (JSON):
+{
+  "proposals": [
+    "1. Dashboard Financiero (Análisis de Datos): Implementar un panel...",
+    "2. Ecosistema de Automatización (IA): Flujo de retención...",
+    "3. Sistema a Medida (CRM): ..."
+  ],
+  "health_score": 65 // Un puntaje inventado de salud digital del 1 al 100
+}`;
+
+    const userMessage = answers.length > 0 
+      ? `Historial de respuestas:\n${JSON.stringify(answers, null, 2)}\n\nGenera la siguiente pregunta o el resultado final si es el paso ${level}.`
+      : `Inicia la entrevista con la primera pregunta sobre Cascada Estratégica (Aspiración).`;
+
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Historial de respuestas: ${JSON.stringify(answers)}. Genera la siguiente pregunta o el resultado final (JSON).` }
+        { role: "user", content: userMessage }
       ],
       response_format: { type: "json_object" }
     });
 
-    return NextResponse.json(JSON.parse(response.choices[0].message.content || '{}'));
+    const aiResponse = JSON.parse(completion.choices[0].message.content || '{}');
+
+    return NextResponse.json(aiResponse);
   } catch (error) {
     return NextResponse.json({ error: 'Error en el motor de diagnóstico' }, { status: 500 });
   }
 }
-
