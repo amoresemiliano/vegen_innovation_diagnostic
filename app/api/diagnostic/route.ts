@@ -7,11 +7,14 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { answers, level, currentStep } = await req.json();
+    const { answers, level, currentStep, businessContext } = await req.json();
 
     // System Prompt Maestro que integra los frameworks de la materia
     const systemPrompt = `Eres un Consultor Senior de Vegen Digital SL.
-    Tu objetivo es realizar un diagnóstico estratégico para una PyME en España.
+    Tu objetivo es realizar un diagnóstico estratégico para la siguiente PyME en España:
+    - Empresa: ${businessContext?.name || 'No especificado'}
+    - Industria/Sector: ${businessContext?.industry || 'No especificado'}
+    - Descripción: ${businessContext?.description || 'No especificada'}
     
     FRAMEWORKS A USAR:
     1. Cascada Estratégica (Aspiración, Dónde jugar, Cómo ganar).

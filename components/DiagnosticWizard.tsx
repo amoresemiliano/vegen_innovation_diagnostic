@@ -10,14 +10,15 @@ const DiagnosticWizard = () => {
   const [loading, setLoading] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [customAnswer, setCustomAnswer] = useState("");
+  const [businessContext, setBusinessContext] = useState(null);
 
-  const fetchNextQuestion = async (currentAnswers) => {
+  const fetchNextQuestion = async (currentAnswers, context = businessContext) => {
     setLoading(true);
     try {
       const response = await fetch('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: currentAnswers, level })
+        body: JSON.stringify({ answers: currentAnswers, level, businessContext: context })
       });
       
       if (response.ok) {
@@ -34,9 +35,8 @@ const DiagnosticWizard = () => {
   };
 
   useEffect(() => {
-    if (level) {
-      fetchNextQuestion([]);
-    }
+    // Ya no hacemos fetch aquí automáticamente al setear el nivel, 
+    // esperamos a que el usuario complete el contexto.
   }, [level]);
 
   const handleAnswer = (option) => {
@@ -119,6 +119,48 @@ const DiagnosticWizard = () => {
             </div>
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (!businessContext) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 flex flex-col items-center justify-center min-h-[75vh] animate-fade-in">
+        <h2 className="text-3xl font-bold text-[#003366] mb-6 text-center">Cuéntanos sobre tu negocio</h2>
+        <p className="text-gray-600 mb-8 text-center">Para que nuestra IA pueda hacerte las preguntas correctas, necesitamos un poco de contexto inicial.</p>
+        
+        <form 
+          className="w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const context = {
+              name: formData.get('name'),
+              industry: formData.get('industry'),
+              description: formData.get('description')
+            };
+            setBusinessContext(context);
+            fetchNextQuestion([], context);
+          }}
+        >
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-bold text-[#003366] mb-2">Nombre de tu Empresa / Proyecto</label>
+              <input name="name" required type="text" placeholder="Ej. El Criollo Taquería" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#003366] outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#003366] mb-2">¿En qué sector o industria te encuentras?</label>
+              <input name="industry" required type="text" placeholder="Ej. Gastronomía / Restaurante" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#003366] outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#003366] mb-2">Breve descripción de lo que hacen (Opcional)</label>
+              <textarea name="description" placeholder="Ej. Vendemos comida mexicana auténtica con entregas a domicilio..." rows="3" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#003366] outline-none"></textarea>
+            </div>
+            <button type="submit" className="w-full bg-[#003366] text-white py-4 rounded-xl font-bold hover:bg-[#002244] transition-colors mt-4">
+              Comenzar Diagnóstico
+            </button>
+          </div>
+        </form>
       </div>
     );
   }
