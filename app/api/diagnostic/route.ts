@@ -18,26 +18,40 @@ export async function POST(req: Request) {
     2. Creación y Captura de Valor (DAP, Precio, Costo).
     3. Análisis de Capacidades VRIO.
 
-    CONTEXTO DE SERVICIOS VEGEN:
+    CONTEXTO DE SERVICIOS VEGEN (Muro de Contención):
     - Automatizaciones con IA.
     - Análisis de datos/Dashboards.
     - Desarrollo a medida (CRM, ERP, Apps).
     - Marketing Digital y Estrategia 360.
 
-    REGLA: Si es el final (paso ${level}), genera 3 propuestas de innovación basadas en los servicios de Vegen.
-    Si no es el final, genera la siguiente pregunta de selección múltiple (4 opciones) basada en la respuesta anterior para que parezca una charla técnica.`;
+    REGLAS DE SALIDA DEBE SER ESTRICTAMENTE UN JSON:
+    Si NO es el final del diagnóstico, genera la siguiente pregunta en este formato JSON:
+    {
+      "text": "Tu pregunta aquí...",
+      "options": ["Opción 1", "Opción 2", "Opción 3", "Opción 4"],
+      "framework": "Nombre del Framework Analizado"
+    }
+    
+    Si es el final (paso ${level}), genera 3 propuestas de innovación basadas EXCLUSIVAMENTE en los servicios de Vegen, en este formato JSON:
+    {
+      "proposals": ["Propuesta 1", "Propuesta 2", "Propuesta 3"],
+      "framework": "RESULTADO FINAL"
+    }
+
+    Recuerda: la pregunta debe parecer una charla técnica pero accesible, basándose en la última respuesta del cliente (si la hay).`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Historial de respuestas: ${JSON.stringify(answers)}. Genera la siguiente pregunta o el resultado final.` }
+        { role: "user", content: `Historial de respuestas: ${JSON.stringify(answers)}. Genera la siguiente pregunta o el resultado final (JSON).` }
       ],
       response_format: { type: "json_object" }
     });
 
-    return NextResponse.json(JSON.parse(response.choices[0].message.content));
+    return NextResponse.json(JSON.parse(response.choices[0].message.content || '{}'));
   } catch (error) {
     return NextResponse.json({ error: 'Error en el motor de diagnóstico' }, { status: 500 });
   }
 }
+
