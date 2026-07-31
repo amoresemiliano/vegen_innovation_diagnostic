@@ -12,6 +12,9 @@ const DiagnosticWizard = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [customAnswer, setCustomAnswer] = useState("");
   const [businessContext, setBusinessContext] = useState(null);
+  const [companyName, setCompanyName] = useState("");
+  const [companyIndustry, setCompanyIndustry] = useState("");
+  const [companyDesc, setCompanyDesc] = useState("");
   const [sessionId, setSessionId] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
