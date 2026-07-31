@@ -399,7 +399,6 @@ const DiagnosticWizard = () => {
           </form>
         </div>
       </div>
-    </div>
   );
 };
 
