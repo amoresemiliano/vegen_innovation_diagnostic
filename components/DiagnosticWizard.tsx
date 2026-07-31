@@ -220,20 +220,12 @@ const DiagnosticWizard = () => {
           empresa: businessContext.name,
           email: leadData.email,
           whatsapp: leadData.whatsapp,
+          status: '1_nuevo'
         }])
         .select()
         .single();
 
       if (leadError) throw leadError;
-
-      const { error: kanbanError } = await supabase
-        .from('kanban_board')
-        .insert([{
-          lead_id: lead.id,
-          status: '1_nuevo'
-        }]);
-
-      if (kanbanError) throw kanbanError;
 
       if (sessionId) {
         await supabase

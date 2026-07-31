@@ -20,20 +20,17 @@ export default function KanbanDashboard() {
   const fetchLeads = async () => {
     try {
       const { data, error } = await supabase
-        .from('kanban_board')
+        .from('leads')
         .select(`
           id,
-          status,
-          leads (
-            id,
-            nombre,
-            empresa,
-            email,
-            whatsapp,
-            created_at
-          )
+          nombre,
+          empresa,
+          email,
+          whatsapp,
+          created_at,
+          status
         `)
-        .order('last_interaction', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setLeads(data || []);
@@ -44,15 +41,15 @@ export default function KanbanDashboard() {
     }
   };
 
-  const moveLead = async (kanbanId, newStatus) => {
+  const moveLead = async (leadId, newStatus) => {
     try {
       await supabase
-        .from('kanban_board')
-        .update({ status: newStatus, last_interaction: new Date().toISOString() })
-        .eq('id', kanbanId);
+        .from('leads')
+        .update({ status: newStatus })
+        .eq('id', leadId);
       
       // Actualizar local
-      setLeads(leads.map(l => l.id === kanbanId ? { ...l, status: newStatus } : l));
+      setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     } catch (err) {
       console.error('Error updating status:', err);
     }
@@ -77,12 +74,8 @@ export default function KanbanDashboard() {
             <h3 className="font-bold text-[#003366] mb-4 text-sm uppercase tracking-wide px-2">{col.title}</h3>
             
             <div className="flex-1 overflow-y-auto space-y-3">
-              {leads.filter(l => l.status === col.id).map(card => {
-                const lead = card.leads;
-                if (!lead) return null;
-                
-                return (
-                  <div key={card.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              {leads.filter(l => l.status === col.id || (!l.status && col.id === '1_nuevo')).map(lead => (
+                  <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-gray-800">{lead.empresa || 'Empresa Local'}</h4>
                       <span className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString()}</span>
@@ -92,8 +85,8 @@ export default function KanbanDashboard() {
                     
                     <div className="flex gap-2 text-xs">
                       <select 
-                        value={card.status}
-                        onChange={(e) => moveLead(card.id, e.target.value)}
+                        value={lead.status || '1_nuevo'}
+                        onChange={(e) => moveLead(lead.id, e.target.value)}
                         className="bg-gray-50 border border-gray-200 rounded p-1 text-[#003366] font-medium w-full outline-none"
                       >
                         {COLUMNS.map(c => (
@@ -102,8 +95,7 @@ export default function KanbanDashboard() {
                       </select>
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
           </div>
         ))}
