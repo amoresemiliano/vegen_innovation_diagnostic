@@ -21,9 +21,11 @@ const DiagnosticWizard = () => {
   const [submittingLead, setSubmittingLead] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
   const [leadData, setLeadData] = useState({ nombre: '', email: '', whatsapp: '' });
+  const [apiError, setApiError] = useState(null);
 
   const fetchNextQuestion = async (currentAnswers, context = businessContext) => {
     setLoading(true);
+    setApiError(null);
     try {
       const response = await fetch('/api/diagnostic', {
         method: 'POST',
@@ -39,9 +41,11 @@ const DiagnosticWizard = () => {
         setCurrentQuestion(data);
       } else {
         console.error("Error al obtener la pregunta");
+        setApiError("Hubo un retraso de red con la Inteligencia Artificial. Por favor, intenta enviar de nuevo.");
       }
     } catch (error) {
       console.error("Error en la petición:", error);
+      setApiError("Fallo de conexión. Revisa tu internet e intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -353,11 +357,29 @@ const DiagnosticWizard = () => {
     );
   }
 
-  if (loading || !currentQuestion) {
+  if (loading || (!currentQuestion && !apiError)) {
     return (
       <div className="max-w-2xl mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-16 h-16 border-4 border-[#003366] border-t-transparent rounded-full animate-spin"></div>
         <p className="mt-4 text-[#003366] font-medium">Analizando respuestas y generando la siguiente pregunta...</p>
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+           <span className="text-red-500 text-2xl font-bold">!</span>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Ops, algo salió mal</h2>
+        <p className="text-gray-600 mb-6">{apiError}</p>
+        <button 
+          onClick={() => fetchNextQuestion(answers)}
+          className="bg-[#003366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#002244] transition-colors"
+        >
+          Reintentar Conexión
+        </button>
       </div>
     );
   }
