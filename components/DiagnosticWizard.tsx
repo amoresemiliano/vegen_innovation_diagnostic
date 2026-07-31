@@ -227,7 +227,7 @@ const DiagnosticWizard = () => {
       if (leadError) throw leadError;
 
       const { error: kanbanError } = await supabase
-        .from('kanban_leads')
+        .from('kanban_board')
         .insert([{
           lead_id: lead.id,
           status: '1_nuevo'
