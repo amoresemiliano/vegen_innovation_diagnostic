@@ -9,6 +9,7 @@ const DiagnosticWizard = () => {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [customAnswer, setCustomAnswer] = useState("");
 
   const fetchNextQuestion = async (currentAnswers) => {
     setLoading(true);
@@ -51,6 +52,13 @@ const DiagnosticWizard = () => {
       setCurrentQuestion(null);
       // Aquí se podría redirigir o mostrar un componente de resultados
     }
+  };
+
+  const handleCustomSubmit = (e) => {
+    e.preventDefault();
+    if (customAnswer.trim() === "") return;
+    handleAnswer(customAnswer);
+    setCustomAnswer("");
   };
 
   if (!level) {
@@ -146,6 +154,26 @@ const DiagnosticWizard = () => {
               {opt}
             </button>
           ))}
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-100 animate-fade-in">
+          <p className="text-sm text-gray-500 mb-3 font-medium">¿Ninguna opción encaja exactamente? Escribe tu propia respuesta:</p>
+          <form onSubmit={handleCustomSubmit} className="flex gap-2">
+            <input 
+              type="text" 
+              value={customAnswer}
+              onChange={(e) => setCustomAnswer(e.target.value)}
+              placeholder="Ej: Quiero pasar de 29k a 40k de ventas..."
+              className="flex-grow p-4 rounded-xl border border-gray-200 focus:border-[#003366] focus:ring-1 focus:ring-[#003366] outline-none transition-all"
+            />
+            <button 
+              type="submit"
+              disabled={!customAnswer.trim()}
+              className="bg-[#003366] text-white px-6 py-4 rounded-xl font-semibold hover:bg-[#002244] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Enviar
+            </button>
+          </form>
         </div>
       </div>
     </div>
