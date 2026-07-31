@@ -75,6 +75,32 @@ const DiagnosticWizard = () => {
     }
   };
 
+  const startDiagnostic = async (e) => {
+    e.preventDefault();
+    const context = { name: companyName, industry: companyIndustry, description: companyDesc };
+    setBusinessContext(context);
+    
+    try {
+      // 1. Crear la Sesión en Supabase
+      const { data: sessionData, error } = await supabase
+        .from('sessions')
+        .insert([{
+          level: level,
+          business_context: context
+        }])
+        .select()
+        .single();
+        
+      if (!error && sessionData) {
+        setSessionId(sessionData.id);
+      }
+    } catch (err) {
+      console.error("Error creando sesión:", err);
+    }
+
+    fetchNextQuestion([], context);
+  };
+
   const handleCustomSubmit = (e) => {
     e.preventDefault();
     if (customAnswer.trim() === "") return;
