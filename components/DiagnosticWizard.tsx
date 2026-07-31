@@ -194,7 +194,7 @@ const DiagnosticWizard = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-[#003366] mb-2">Breve descripción de lo que hacen (Opcional)</label>
-              <textarea name="description" onChange={(e) => setCompanyDesc(e.target.value)} placeholder="Ej. Vendemos comida mexicana auténtica con entregas a domicilio..." rows="3" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#003366] outline-none"></textarea>
+              <textarea name="description" onChange={(e) => setCompanyDesc(e.target.value)} placeholder="Ej. Vendemos comida mexicana auténtica con entregas a domicilio..." rows={3} className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#003366] outline-none"></textarea>
             </div>
             <button type="submit" className="w-full bg-[#003366] text-white py-4 rounded-xl font-bold hover:bg-[#002244] transition-colors mt-4">
               Comenzar Diagnóstico
