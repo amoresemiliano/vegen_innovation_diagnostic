@@ -213,19 +213,43 @@ const DiagnosticWizard = () => {
     e.preventDefault();
     setSubmittingLead(true);
     try {
-      const { data: lead, error: leadError } = await supabase
+      // Check if lead exists to avoid unique constraint / upsert issues
+      let lead;
+      const { data: existingLead } = await supabase
         .from('leads')
-        .upsert([{
-          nombre: leadData.nombre,
-          empresa: businessContext.name,
-          email: leadData.email,
-          whatsapp: leadData.whatsapp,
-          status: '1_nuevo'
-        }], { onConflict: 'email' })
-        .select()
+        .select('id')
+        .eq('email', leadData.email)
         .single();
 
-      if (leadError) throw leadError;
+      if (existingLead) {
+        const { data: updatedLead, error: updateError } = await supabase
+          .from('leads')
+          .update({
+            nombre: leadData.nombre,
+            empresa: businessContext.name,
+            whatsapp: leadData.whatsapp,
+            status: '1_nuevo'
+          })
+          .eq('id', existingLead.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        lead = updatedLead;
+      } else {
+        const { data: newLead, error: insertError } = await supabase
+          .from('leads')
+          .insert([{
+            nombre: leadData.nombre,
+            empresa: businessContext.name,
+            email: leadData.email,
+            whatsapp: leadData.whatsapp,
+            status: '1_nuevo'
+          }])
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        lead = newLead;
+      }
 
       if (sessionId) {
         await supabase
