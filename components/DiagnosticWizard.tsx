@@ -215,13 +215,13 @@ const DiagnosticWizard = () => {
     try {
       const { data: lead, error: leadError } = await supabase
         .from('leads')
-        .insert([{
+        .upsert([{
           nombre: leadData.nombre,
           empresa: businessContext.name,
           email: leadData.email,
           whatsapp: leadData.whatsapp,
           status: '1_nuevo'
-        }])
+        }], { onConflict: 'email' })
         .select()
         .single();
 
