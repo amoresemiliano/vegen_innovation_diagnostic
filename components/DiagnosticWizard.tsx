@@ -10,6 +10,7 @@ const DiagnosticWizard = () => {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customAnswer, setCustomAnswer] = useState("");
   const [businessContext, setBusinessContext] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -263,9 +264,9 @@ const DiagnosticWizard = () => {
       }
 
       setLeadSuccess(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error guardando en Supabase:', error);
-      alert('Hubo un error al enviar tus datos. Por favor, intenta nuevamente.');
+      alert(`Error DB: ${error.message || JSON.stringify(error)}`);
     } finally {
       setSubmittingLead(false);
     }
