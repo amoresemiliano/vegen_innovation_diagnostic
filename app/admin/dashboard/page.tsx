@@ -103,7 +103,7 @@ export default function KanbanDashboard() {
       </div>
     `;
 
-    const opt = {
+    const opt: any = {
       margin:       10,
       filename:     `Diagnostico_${lead.empresa || 'Vegen'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
