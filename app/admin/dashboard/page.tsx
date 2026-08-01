@@ -3,7 +3,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LayoutDashboard, List, BarChart3, MessageCircle, FileDown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import html2pdf from 'html2pdf.js';
 
 const COLUMNS = [
   { id: '1_nuevo', title: '1. Nuevos Diagnósticos' },
@@ -66,7 +65,9 @@ export default function KanbanDashboard() {
     }
   };
 
-  const generatePDF = (lead) => {
+  const generatePDF = async (lead) => {
+    const html2pdf = (await import('html2pdf.js')).default;
+    
     const element = document.createElement('div');
     element.innerHTML = `
       <div style="font-family: sans-serif; padding: 20px; color: #111827;">
