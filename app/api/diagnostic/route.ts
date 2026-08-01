@@ -39,13 +39,14 @@ FORMATO DE PREGUNTA (JSON):
 
 RESULTADO FINAL (Al llegar a la última pregunta):
 Genera 3 propuestas de innovación basadas EXCLUSIVAMENTE en el catálogo de Vegen (IA, Dashboards, Sistemas a medida, E-commerce, Automatizaciones).
-Si el cliente tiene problemas operativos, NO propongas 'contratar consultores'. PROPÓN 'Automatización de procesos con IA y Dashboards'.
+CRÍTICO: Tus propuestas NO pueden ser genéricas. Debes justificar cada propuesta haciendo referencia EXPLÍCITA a las respuestas que dio el usuario a lo largo de la entrevista. 
+Ejemplo de estructura esperada para cada propuesta: "1. [Título]: Dado que mencionaste que [Problema del cliente], te proponemos [Solución Vegen]. Esto te permitirá [Beneficio esperado]..."
 
 FORMATO RESULTADO FINAL (JSON):
 {
   "proposals": [
-    "1. Dashboard Financiero Predictivo: Implementar un panel...",
-    "2. Ecosistema de Automatización (IA): Flujo de retención...",
+    "1. Dashboard Financiero Predictivo: Dado que mencionaste que tus márgenes bajaron un 15% y no sabes dónde está la fuga, implementar un panel de control con IA te permitirá cruzar tus gastos vs ingresos en tiempo real...",
+    "2. Ecosistema de Automatización (IA): Como tu equipo pierde 3 horas diarias en tareas manuales de soporte, proponemos...",
     "3. Sistema a Medida (CRM): ..."
   ],
   "health_score": 65 // Un puntaje inventado de salud digital del 1 al 100
