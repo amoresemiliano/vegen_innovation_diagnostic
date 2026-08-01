@@ -16,6 +16,7 @@ const DiagnosticWizard = () => {
   const [businessContext, setBusinessContext] = useState(null);
   const [companyName, setCompanyName] = useState("");
   const [companyIndustry, setCompanyIndustry] = useState("");
+  const [companyLocation, setCompanyLocation] = useState("");
   const [companyDesc, setCompanyDesc] = useState("");
   const [sessionId, setSessionId] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
@@ -100,7 +101,7 @@ const DiagnosticWizard = () => {
 
   const startDiagnostic = async (e) => {
     e.preventDefault();
-    const context = { name: companyName, industry: companyIndustry, description: companyDesc };
+    const context = { name: companyName, industry: companyIndustry, location: companyLocation, description: companyDesc };
     setBusinessContext(context);
     
     try {
@@ -224,6 +225,10 @@ const DiagnosticWizard = () => {
               <input name="industry" required type="text" onChange={(e) => setCompanyIndustry(e.target.value)} placeholder="Ej. Gastronomía / Restaurante" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#111827] outline-none" />
             </div>
             <div>
+              <label className="block text-sm font-bold text-[#111827] mb-2">Ubicación (Ciudad / País)</label>
+              <input name="location" required type="text" onChange={(e) => setCompanyLocation(e.target.value)} placeholder="Ej. Madrid, España" className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#111827] outline-none" />
+            </div>
+            <div>
               <label className="block text-sm font-bold text-[#111827] mb-2">Breve descripción de lo que hacen (Opcional)</label>
               <textarea name="description" onChange={(e) => setCompanyDesc(e.target.value)} placeholder="Ej. Vendemos comida mexicana auténtica con entregas a domicilio..." rows={3} className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#111827] outline-none"></textarea>
             </div>
@@ -255,6 +260,8 @@ const DiagnosticWizard = () => {
             nombre: leadData.nombre,
             empresa: businessContext.name,
             whatsapp: leadData.whatsapp,
+            industria: businessContext.industry,
+            ubicacion: businessContext.location,
             status: '1_nuevo'
           })
           .eq('id', existingLead.id)
@@ -270,6 +277,8 @@ const DiagnosticWizard = () => {
             empresa: businessContext.name,
             email: leadData.email,
             whatsapp: leadData.whatsapp,
+            industria: businessContext.industry,
+            ubicacion: businessContext.location,
             status: '1_nuevo'
           }])
           .select()
@@ -385,15 +394,24 @@ const DiagnosticWizard = () => {
               Tu informe detallado está en camino. Mientras tanto, ya puedes leer el resumen completo de las propuestas arriba.
             </p>
             
-            <a 
-              href={`https://wa.me/34XXXXXXXXX?text=Hola%20Vegen,%20acabo%20de%20terminar%20mi%20diagnóstico%20Full%20Transformation%20para%20${encodeURIComponent(businessContext?.name || 'mi empresa')}.%20Me%20gustaría%20profundizar%20en%20las%20propuestas.`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#1da851] transition-transform hover:scale-105"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-              Hablar ahora por WhatsApp
-            </a>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <a 
+                href={`https://wa.me/34617741199?text=Hola%20Vegen,%20acabo%20de%20terminar%20mi%20diagnóstico%20para%20${encodeURIComponent(businessContext?.name || 'mi empresa')}.%20Me%20gustaría%20profundizar%20en%20las%20propuestas.`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#1da851] transition-transform hover:scale-105"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                Hablar por WhatsApp
+              </a>
+              <a 
+                href="mailto:info@vegendigital.com"
+                className="inline-flex items-center gap-3 bg-[#111827] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#002244] transition-transform hover:scale-105"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Enviar Email
+              </a>
+            </div>
           </div>
         )}
       </div>
@@ -482,24 +500,22 @@ const DiagnosticWizard = () => {
 
         <div className="mt-8 pt-6 border-t border-gray-100 animate-fade-in">
           <p className="text-sm text-gray-500 mb-3 font-medium">¿Deseas agregar más detalles? Escribe tu propia respuesta (Opcional):</p>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
             <textarea 
               value={customAnswer}
               onChange={(e) => setCustomAnswer(e.target.value)}
               placeholder="Ej: Quiero pasar de 29k a 40k de ventas y mejorar mi retención..."
               rows={2}
-              className="w-full p-4 rounded-xl border border-gray-200 focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] outline-none transition-all"
+              className="flex-1 p-4 rounded-xl border border-gray-200 focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] outline-none transition-all resize-none"
             />
-            <div className="flex justify-end">
-              <button 
-                onClick={handleAnswerSubmit}
-                disabled={selectedOptions.length === 0 && !customAnswer.trim()}
-                className="bg-[#111827] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#F97316] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-              >
-                Siguiente Pregunta
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-              </button>
-            </div>
+            <button 
+              onClick={handleAnswerSubmit}
+              disabled={selectedOptions.length === 0 && !customAnswer.trim()}
+              className="bg-[#111827] text-white px-8 h-[74px] rounded-xl font-bold hover:bg-[#F97316] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 flex-shrink-0"
+            >
+              Siguiente
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
           </div>
         </div>
       </div>

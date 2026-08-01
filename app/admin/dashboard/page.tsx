@@ -1,7 +1,7 @@
-"use client";
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, List, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, List, BarChart3, MessageCircle } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const COLUMNS = [
   { id: '1_nuevo', title: '1. Nuevos Diagnósticos' },
@@ -30,7 +30,9 @@ export default function KanbanDashboard() {
           email,
           whatsapp,
           created_at,
-          status
+          status,
+          industria,
+          ubicacion
         `)
         .order('created_at', { ascending: false });
 
@@ -53,6 +55,25 @@ export default function KanbanDashboard() {
       setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     } catch (err) {
       console.error('Error updating status:', err);
+    }
+  };
+
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+    const { source, destination, draggableId } = result;
+
+    if (source.droppableId !== destination.droppableId) {
+      const newStatus = destination.droppableId;
+      setLeads(leads.map(l => l.id.toString() === draggableId ? { ...l, status: newStatus } : l));
+      
+      try {
+        await supabase
+          .from('leads')
+          .update({ status: newStatus })
+          .eq('id', draggableId);
+      } catch (err) {
+        console.error('Error updating status:', err);
+      }
     }
   };
 
@@ -90,40 +111,65 @@ export default function KanbanDashboard() {
       </div>
 
       {activeTab === 'kanban' && (
-        <div className="flex gap-6 overflow-x-auto pb-4">
-          {COLUMNS.map(col => (
-            <div key={col.id} className="w-80 flex-shrink-0 bg-gray-200/50 rounded-2xl p-4 flex flex-col h-[75vh]">
-              <h3 className="font-bold text-[#111827] mb-4 text-sm uppercase tracking-wide px-2 flex justify-between">
-                {col.title}
-                <span className="bg-white text-xs px-2 py-1 rounded-full">{leads.filter(l => l.status === col.id || (!l.status && col.id === '1_nuevo')).length}</span>
-              </h3>
-              
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {leads.filter(l => l.status === col.id || (!l.status && col.id === '1_nuevo')).map(lead => (
-                    <div key={lead.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-[#10B981] transition-all group">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-[#111827] truncate">{lead.empresa || 'Empresa Local'}</h4>
-                        <span className="text-[10px] text-gray-400 font-bold whitespace-nowrap ml-2">{new Date(lead.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-xs text-gray-600 mb-1 font-medium">👤 {lead.nombre}</p>
-                      {lead.whatsapp && <p className="text-xs text-gray-500 mb-3">📱 {lead.whatsapp}</p>}
-                      <p className="text-xs text-gray-500 mb-3 truncate">📧 {lead.email}</p>
-                      
-                      <select 
-                        value={lead.status || '1_nuevo'}
-                        onChange={(e) => moveLead(lead.id, e.target.value)}
-                        className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-[#111827] text-xs font-bold w-full outline-none hover:border-[#10B981] transition-colors"
-                      >
-                        {COLUMNS.map(c => (
-                          <option key={c.id} value={c.id}>{c.title}</option>
-                        ))}
-                      </select>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-6 overflow-x-auto pb-4">
+            {COLUMNS.map(col => (
+              <div key={col.id} className="w-80 flex-shrink-0 bg-gray-200/50 rounded-2xl p-4 flex flex-col h-[75vh]">
+                <h3 className="font-bold text-[#111827] mb-4 text-sm uppercase tracking-wide px-2 flex justify-between">
+                  {col.title}
+                  <span className="bg-white text-xs px-2 py-1 rounded-full">{leads.filter(l => l.status === col.id || (!l.status && col.id === '1_nuevo')).length}</span>
+                </h3>
+                
+                <Droppable droppableId={col.id}>
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="flex-1 overflow-y-auto space-y-3 pr-1"
+                    >
+                      {leads.filter(l => l.status === col.id || (!l.status && col.id === '1_nuevo')).map((lead, index) => (
+                        <Draggable key={lead.id} draggableId={lead.id.toString()} index={index}>
+                          {(provided) => (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-[#10B981] transition-all group relative cursor-grab active:cursor-grabbing"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <h4 className="font-bold text-[#111827] truncate">{lead.empresa || 'Empresa Local'}</h4>
+                                <span className="text-[10px] text-gray-400 font-bold whitespace-nowrap ml-2">{new Date(lead.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                {lead.industria || 'Industria'} • {lead.ubicacion || 'Ubicación'}
+                              </p>
+                              
+                              <p className="text-xs text-gray-600 mb-1 font-medium">👤 {lead.nombre}</p>
+                              <p className="text-xs text-gray-500 mb-3 truncate">📧 {lead.email}</p>
+                              
+                              {lead.whatsapp && (
+                                <a 
+                                  href={`https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20te%20escribimos%20de%20Vegen%20Digital.%20Has%20rellenado%20el%20formulario%20para%20recibir%20propuestas%20de%20innovación...%20te%20queda%20bien%20que%20coordinemos%20una%20llamada%20para%20ver%20cómo%20podemos%20ayudarte?`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-3 flex items-center justify-center gap-2 w-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors py-2 rounded-lg text-xs font-bold"
+                                >
+                                  <MessageCircle className="w-3 h-3" />
+                                  Contactar por WhatsApp
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                ))}
+                  )}
+                </Droppable>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </DragDropContext>
       )}
 
       {activeTab === 'list' && (
@@ -142,18 +188,30 @@ export default function KanbanDashboard() {
               <tbody className="text-sm divide-y divide-gray-100">
                 {leads.map(lead => (
                   <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4 font-bold text-[#111827]">{lead.empresa}</td>
-                    <td className="p-4 text-gray-600">{lead.nombre}</td>
-                    <td className="p-4 text-gray-500">
-                      <div>{lead.email}</div>
-                      <div className="text-xs">{lead.whatsapp}</div>
+                    <td className="p-4">
+                      <div className="font-bold text-[#111827]">{lead.empresa}</div>
+                      <div className="text-[10px] text-gray-400 font-bold uppercase mt-1">{lead.industria} • {lead.ubicacion}</div>
                     </td>
-                    <td className="p-4 text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</td>
+                    <td className="p-4 text-gray-600 font-medium">{lead.nombre}</td>
+                    <td className="p-4 text-gray-500">
+                      <div className="text-xs truncate max-w-[150px]">{lead.email}</div>
+                      {lead.whatsapp && (
+                        <a 
+                          href={`https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20te%20escribimos%20de%20Vegen%20Digital.%20Has%20rellenado%20el%20formulario%20para%20recibir%20propuestas%20de%20innovación...%20te%20queda%20bien%20que%20coordinemos%20una%20llamada%20para%20ver%20cómo%20podemos%20ayudarte?`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 mt-1 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors px-2 py-1 rounded text-[10px] font-bold"
+                        >
+                          <MessageCircle className="w-3 h-3" /> Chat
+                        </a>
+                      )}
+                    </td>
+                    <td className="p-4 text-gray-500 text-xs font-bold">{new Date(lead.created_at).toLocaleDateString()}</td>
                     <td className="p-4">
                       <select 
                         value={lead.status || '1_nuevo'}
                         onChange={(e) => moveLead(lead.id, e.target.value)}
-                        className="bg-gray-100 rounded p-1 text-[#111827] text-xs font-bold outline-none"
+                        className="bg-gray-100 rounded p-1 text-[#111827] text-xs font-bold outline-none border-transparent hover:border-[#10B981] transition-colors"
                       >
                         {COLUMNS.map(c => (
                           <option key={c.id} value={c.id}>{c.title}</option>
@@ -170,20 +228,75 @@ export default function KanbanDashboard() {
       )}
 
       {activeTab === 'metrics' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
-            <div className="text-5xl font-black text-[#10B981] mb-2">{leads.length}</div>
-            <div className="text-sm font-bold text-gray-500 uppercase tracking-widest">Total de Leads Generados</div>
-          </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
-            <div className="text-5xl font-black text-[#F97316] mb-2">{leads.filter(l => l.status === '4_cliente').length}</div>
-            <div className="text-sm font-bold text-gray-500 uppercase tracking-widest">Conversiones (Clientes)</div>
-          </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
-            <div className="text-5xl font-black text-[#111827] mb-2">
-              {leads.length > 0 ? Math.round((leads.filter(l => l.status === '4_cliente').length / leads.length) * 100) : 0}%
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
+              <div className="text-5xl font-black text-[#111827] mb-2">{leads.length}</div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Leads Totales</div>
             </div>
-            <div className="text-sm font-bold text-gray-500 uppercase tracking-widest">Tasa de Conversión</div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
+              <div className="text-5xl font-black text-[#10B981] mb-2">{leads.filter(l => l.status === '1_nuevo' || !l.status).length}</div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nuevos</div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center">
+              <div className="text-5xl font-black text-[#F97316] mb-2">{leads.filter(l => l.status === '3_caliente').length}</div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Calientes</div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-[#111827] rounded-bl-full opacity-10"></div>
+              <div className="text-5xl font-black text-[#111827] mb-2">
+                {leads.length > 0 ? Math.round((leads.filter(l => l.status === '4_cliente').length / leads.length) * 100) : 0}%
+              </div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Conversión</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Desglose por Industria</h3>
+              <div className="space-y-4">
+                {Object.entries(
+                  leads.reduce((acc, lead) => {
+                    const ind = lead.industria || 'Sin Especificar';
+                    acc[ind] = (acc[ind] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5).map(([ind, count]: any) => (
+                  <div key={ind}>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-[#111827]">{ind}</span>
+                      <span className="text-gray-500">{count} leads</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div className="bg-[#10B981] h-1.5 rounded-full" style={{ width: `${(count / leads.length) * 100}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Desglose por Ubicación</h3>
+              <div className="space-y-4">
+                {Object.entries(
+                  leads.reduce((acc, lead) => {
+                    const loc = lead.ubicacion || 'Desconocida';
+                    acc[loc] = (acc[loc] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5).map(([loc, count]: any) => (
+                  <div key={loc}>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-[#111827]">{loc}</span>
+                      <span className="text-gray-500">{count} leads</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div className="bg-[#F97316] h-1.5 rounded-full" style={{ width: `${(count / leads.length) * 100}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
