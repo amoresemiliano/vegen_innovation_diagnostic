@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { LayoutDashboard, List, BarChart3, MessageCircle } from 'lucide-react';
