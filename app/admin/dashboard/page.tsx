@@ -1,8 +1,8 @@
-"use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, List, BarChart3, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, List, BarChart3, MessageCircle, FileDown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import html2pdf from 'html2pdf.js';
 
 const COLUMNS = [
   { id: '1_nuevo', title: '1. Nuevos Diagnósticos' },
@@ -22,28 +22,95 @@ export default function KanbanDashboard() {
 
   const fetchLeads = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: leadsData, error } = await supabase
         .from('leads')
-        .select(`
-          id,
-          nombre,
-          empresa,
-          email,
-          whatsapp,
-          created_at,
-          status,
-          industria,
-          ubicacion
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      
+      const leadIds = leadsData?.map(l => l.id) || [];
+      let enhancedLeads = leadsData || [];
+      
+      if (leadIds.length > 0) {
+        const { data: sessionsData } = await supabase
+          .from('sessions')
+          .select('*')
+          .in('lead_id', leadIds);
+          
+        const sessionIds = sessionsData?.map(s => s.id) || [];
+        let logsData: any[] = [];
+        
+        if (sessionIds.length > 0) {
+          const { data } = await supabase
+            .from('framework_logs')
+            .select('*')
+            .in('session_id', sessionIds)
+            .order('step_number', { ascending: true });
+          logsData = data || [];
+        }
+        
+        enhancedLeads = leadsData.map(lead => {
+          const session = sessionsData?.find(s => s.lead_id === lead.id);
+          const logs = session ? logsData.filter(l => l.session_id === session.id) : [];
+          return { ...lead, session, logs };
+        });
+      }
+
+      setLeads(enhancedLeads);
     } catch (err) {
       console.error('Error fetching leads:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generatePDF = (lead) => {
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="font-family: sans-serif; padding: 20px; color: #111827;">
+        <h1 style="color: #10B981; margin-bottom: 0;">Diagnóstico de Innovación</h1>
+        <h2 style="margin-top: 5px;">${lead.empresa}</h2>
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+        
+        <h3>Datos de Contacto</h3>
+        <p><strong>Contacto:</strong> ${lead.nombre}</p>
+        <p><strong>Email:</strong> ${lead.email}</p>
+        <p><strong>Teléfono:</strong> ${lead.whatsapp || 'N/A'}</p>
+        <p><strong>Industria:</strong> ${lead.industria || 'N/A'}</p>
+        <p><strong>Ubicación:</strong> ${lead.ubicacion || 'N/A'}</p>
+        
+        <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
+        
+        <h3>Registro de Entrevista (Q&A)</h3>
+        ${lead.logs && lead.logs.length > 0 ? lead.logs.map((log, i) => `
+          <div style="margin-bottom: 15px; background: #f9fafb; padding: 15px; border-radius: 8px;">
+            <p style="margin:0; font-size: 12px; color: #6b7280; font-weight: bold; text-transform: uppercase;">Pregunta ${i+1} • ${log.framework_tag}</p>
+            <p style="margin: 5px 0; font-weight: bold;">Q: ${log.question_text}</p>
+            <p style="margin: 0; color: #4b5563;">A: ${log.answer_text}</p>
+          </div>
+        `).join('') : '<p>No hay registro de preguntas disponible.</p>'}
+        
+        <div style="page-break-before: always;"></div>
+        
+        <h3 style="color: #F97316;">Propuestas Estratégicas (IA)</h3>
+        ${lead.session?.proposals && lead.session.proposals.length > 0 ? lead.session.proposals.map((prop, i) => `
+          <div style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #F97316; background: #fff7ed;">
+            <p style="margin: 0;">${prop}</p>
+          </div>
+        `).join('') : '<p>No hay propuestas generadas.</p>'}
+      </div>
+    `;
+
+    const opt = {
+      margin:       10,
+      filename:     `Diagnostico_${lead.empresa || 'Vegen'}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   const moveLead = async (leadId, newStatus) => {
@@ -148,17 +215,29 @@ export default function KanbanDashboard() {
                               <p className="text-xs text-gray-600 mb-1 font-medium">👤 {lead.nombre}</p>
                               <p className="text-xs text-gray-500 mb-3 truncate">📧 {lead.email}</p>
                               
-                              {lead.whatsapp && (
-                                <a 
-                                  href={`https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20te%20escribimos%20de%20Vegen%20Digital.%20Has%20rellenado%20el%20formulario%20para%20recibir%20propuestas%20de%20innovación...%20te%20queda%20bien%20que%20coordinemos%20una%20llamada%20para%20ver%20cómo%20podemos%20ayudarte?`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="mt-3 flex items-center justify-center gap-2 w-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors py-2 rounded-lg text-xs font-bold"
+                              <div className="flex gap-2 mt-3">
+                                {lead.whatsapp && (
+                                  <a 
+                                    href={`https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20te%20escribimos%20de%20Vegen%20Digital.%20Has%20rellenado%20el%20formulario%20para%20recibir%20propuestas%20de%20innovación...%20te%20queda%20bien%20que%20coordinemos%20una%20llamada%20para%20ver%20cómo%20podemos%20ayudarte?`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 flex items-center justify-center gap-1 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors py-2 rounded-lg text-[10px] font-bold"
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    WhatsApp
+                                  </a>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    generatePDF(lead);
+                                  }}
+                                  className="flex-1 flex items-center justify-center gap-1 bg-gray-100 text-gray-700 hover:bg-[#111827] hover:text-white transition-colors py-2 rounded-lg text-[10px] font-bold"
                                 >
-                                  <MessageCircle className="w-3 h-3" />
-                                  Contactar por WhatsApp
-                                </a>
-                              )}
+                                  <FileDown className="w-3 h-3" />
+                                  Descargar
+                                </button>
+                              </div>
                             </div>
                           )}
                         </Draggable>
@@ -174,40 +253,46 @@ export default function KanbanDashboard() {
       )}
 
       {activeTab === 'list' && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-200">
-                  <th className="p-4 font-bold">Empresa</th>
-                  <th className="p-4 font-bold">Contacto</th>
-                  <th className="p-4 font-bold">Email / Tel</th>
-                  <th className="p-4 font-bold">Fecha</th>
-                  <th className="p-4 font-bold">Estado</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Empresa</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Industria</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Ubicación</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Contacto</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Email</th>
+                  <th className="p-4 font-bold whitespace-nowrap">WhatsApp</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Fecha</th>
+                  <th className="p-4 font-bold whitespace-nowrap">Estado</th>
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-gray-100">
                 {leads.map(lead => (
                   <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4">
-                      <div className="font-bold text-[#111827]">{lead.empresa}</div>
-                      <div className="text-[10px] text-gray-400 font-bold uppercase mt-1">{lead.industria} • {lead.ubicacion}</div>
-                    </td>
+                    <td className="p-4 font-bold text-[#111827]">{lead.empresa}</td>
+                    <td className="p-4 text-xs text-gray-600">{lead.industria}</td>
+                    <td className="p-4 text-xs text-gray-600">{lead.ubicacion}</td>
                     <td className="p-4 text-gray-600 font-medium">{lead.nombre}</td>
                     <td className="p-4 text-gray-500">
                       <div className="text-xs truncate max-w-[150px]">{lead.email}</div>
-                      {lead.whatsapp && (
+                    </td>
+                    <td className="p-4 text-gray-500">
+                      {lead.whatsapp ? (
                         <a 
                           href={`https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, '')}?text=Hola,%20te%20escribimos%20de%20Vegen%20Digital.%20Has%20rellenado%20el%20formulario%20para%20recibir%20propuestas%20de%20innovación...%20te%20queda%20bien%20que%20coordinemos%20una%20llamada%20para%20ver%20cómo%20podemos%20ayudarte?`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 mt-1 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors px-2 py-1 rounded text-[10px] font-bold"
+                          className="inline-flex items-center gap-1 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors px-2 py-1 rounded text-[10px] font-bold"
                         >
                           <MessageCircle className="w-3 h-3" /> Chat
                         </a>
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
                       )}
                     </td>
-                    <td className="p-4 text-gray-500 text-xs font-bold">{new Date(lead.created_at).toLocaleDateString()}</td>
+                    <td className="p-4 text-gray-500 text-xs font-bold whitespace-nowrap">{new Date(lead.created_at).toLocaleDateString()}</td>
                     <td className="p-4">
                       <select 
                         value={lead.status || '1_nuevo'}
@@ -252,7 +337,7 @@ export default function KanbanDashboard() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Desglose por Industria</h3>
               <div className="space-y-4">
@@ -296,6 +381,78 @@ export default function KanbanDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {/* Framework Metrics */}
+            <div className="bg-[#111827] p-6 rounded-2xl border border-gray-800 shadow-sm text-white">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Preguntas por Framework</h3>
+              <div className="space-y-4">
+                {(() => {
+                  const frameworkCounts = leads.reduce((acc, lead) => {
+                    if (lead.logs) {
+                      lead.logs.forEach(log => {
+                        const tag = log.framework_tag || 'General';
+                        acc[tag] = (acc[tag] || 0) + 1;
+                      });
+                    }
+                    return acc;
+                  }, {});
+                  const totalQuestions = Object.values(frameworkCounts).reduce((a: any, b: any) => a + b, 0) as number;
+                  
+                  return Object.entries(frameworkCounts).sort((a: any, b: any) => b[1] - a[1]).map(([tag, count]: any) => (
+                    <div key={tag}>
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="text-gray-200">{tag}</span>
+                        <span className="text-gray-400">{count} preguntas</span>
+                      </div>
+                      <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="bg-[#10B981] h-1.5 rounded-full" style={{ width: totalQuestions > 0 ? `${(count / totalQuestions) * 100}%` : '0%' }}></div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Proposal Areas */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Áreas de Propuestas (Vegen)</h3>
+              <div className="space-y-4">
+                {(() => {
+                  const proposalCounts = leads.reduce((acc, lead) => {
+                    if (lead.session?.proposals) {
+                      lead.session.proposals.forEach(prop => {
+                        const lowerProp = prop.toLowerCase();
+                        if (lowerProp.includes('ia') || lowerProp.includes('inteligencia artificial') || lowerProp.includes('predictiv') || lowerProp.includes('machine learning')) {
+                          acc['IA & Automatización Avanzada'] = (acc['IA & Automatización Avanzada'] || 0) + 1;
+                        } else if (lowerProp.includes('data') || lowerProp.includes('dashboard') || lowerProp.includes('panel') || lowerProp.includes('analítica')) {
+                          acc['Data & BI'] = (acc['Data & BI'] || 0) + 1;
+                        } else if (lowerProp.includes('marketing') || lowerProp.includes('mkt') || lowerProp.includes('ventas') || lowerProp.includes('ecommerce') || lowerProp.includes('e-commerce') || lowerProp.includes('crm')) {
+                          acc['Marketing, Ventas & CRM'] = (acc['Marketing, Ventas & CRM'] || 0) + 1;
+                        } else {
+                          acc['Sistemas & Operaciones'] = (acc['Sistemas & Operaciones'] || 0) + 1;
+                        }
+                      });
+                    }
+                    return acc;
+                  }, {});
+                  const totalProposals = Object.values(proposalCounts).reduce((a: any, b: any) => a + b, 0) as number;
+
+                  return Object.entries(proposalCounts).sort((a: any, b: any) => b[1] - a[1]).map(([area, count]: any) => (
+                    <div key={area}>
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="text-[#111827]">{area}</span>
+                        <span className="text-gray-500">{count} props</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div className="bg-[#3B82F6] h-1.5 rounded-full" style={{ width: totalProposals > 0 ? `${(count / totalProposals) * 100}%` : '0%' }}></div>
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </div>
