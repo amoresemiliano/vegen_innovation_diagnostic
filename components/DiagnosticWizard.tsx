@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { Zap, Rocket, Building2, ChevronRight, Activity, TrendingUp, Laptop, BrainCircuit } from 'lucide-react';
 
 const DiagnosticWizard = () => {
   const [step, setStep] = useState(0);
@@ -130,59 +131,72 @@ const DiagnosticWizard = () => {
 
   if (!level) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[75vh] p-6 text-center max-w-5xl mx-auto animate-fade-in">
-        <h1 className="text-4xl md:text-5xl font-bold text-[#111827] mb-6 tracking-tight">
-          Descubre el Potencial Oculto de tu Empresa
+      <div className="flex flex-col items-center justify-center min-h-[75vh] p-6 text-center max-w-6xl mx-auto animate-fade-in">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#10B981]/10 text-[#10B981] font-bold text-sm mb-6">
+          <BrainCircuit className="w-4 h-4" />
+          <span>Vegen AI Diagnostic Engine</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#111827] mb-6 tracking-tight">
+          Descubre el Potencial <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#F97316]">Oculto</span> de tu Empresa
         </h1>
         <p className="text-lg md:text-xl text-gray-600 mb-4 max-w-3xl leading-relaxed">
-          Nuestro Diagnóstico de Innovación impulsado por Inteligencia Artificial evaluará tu modelo de negocio en tiempo real. 
-          Al finalizar, recibirás <span className="font-semibold text-[#10B981]">3 propuestas estratégicas de innovación sin costo</span>, adaptadas a tus necesidades.
+          Nuestro algoritmo impulsado por Inteligencia Artificial evaluará tu modelo de negocio en tiempo real. 
+          Al finalizar, recibirás <span className="font-bold text-[#10B981]">3 propuestas estratégicas de innovación sin costo</span>, listas para implementar.
         </p>
-        <p className="text-md text-gray-500 mb-12">
-          Selecciona la profundidad del análisis para comenzar.
+        <p className="text-md font-medium text-gray-400 mb-12 uppercase tracking-widest">
+          Selecciona la profundidad del análisis
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full px-4">
           {/* Card Nivel 1 */}
-          <button onClick={() => setLevel(20)} className="group relative bg-white p-8 border border-gray-200 rounded-2xl hover:border-[#111827] hover:shadow-xl transition-all flex flex-col items-center text-center overflow-hidden">
-            <div className="text-sm font-bold text-[#10B981] uppercase tracking-widest mb-4">Nivel 1</div>
-            <h3 className="text-2xl font-bold text-[#111827] mb-2">Express</h3>
-            <div className="text-8xl font-extrabold text-gray-50 group-hover:text-blue-50 absolute -top-4 -right-4 -z-10 transition-colors opacity-60">20</div>
+          <button onClick={() => setLevel(20)} className="group relative bg-white p-8 border border-gray-100 rounded-3xl hover:border-[#10B981]/50 hover:shadow-2xl hover:shadow-[#10B981]/10 transition-all duration-300 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-[#10B981]/10 transition-colors">
+              <Zap className="w-8 h-8 text-gray-400 group-hover:text-[#10B981] transition-colors" />
+            </div>
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nivel 1</div>
+            <h3 className="text-2xl font-black text-[#111827] mb-4">Express</h3>
             <p className="text-gray-500 mb-8 flex-grow text-sm leading-relaxed">
-              Auditoría rápida de tus procesos actuales. Ideal para detectar cuellos de botella urgentes e ineficiencias.
+              Auditoría rápida de tus procesos actuales. Ideal para detectar cuellos de botella urgentes e ineficiencias operativas.
             </p>
-            <div className="w-full py-3 rounded-xl bg-gray-50 text-[#111827] font-semibold group-hover:bg-[#111827] group-hover:text-white transition-colors">
-              Iniciar Express (20 Preguntas)
+            <div className="w-full py-4 rounded-xl bg-gray-50 text-[#111827] font-bold group-hover:bg-[#111827] group-hover:text-white transition-all flex items-center justify-center gap-2">
+              20 Preguntas
+              <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </div>
           </button>
           
           {/* Card Nivel 2 */}
-          <button onClick={() => setLevel(35)} className="group relative bg-white p-8 border-2 border-[#111827] rounded-2xl hover:shadow-2xl transition-all flex flex-col items-center text-center transform hover:-translate-y-1 overflow-hidden z-10">
-            <div className="absolute top-0 inset-x-0 h-1 bg-[#10B981]"></div>
-            <div className="absolute -top-3 bg-[#10B981] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+          <button onClick={() => setLevel(35)} className="group relative bg-white p-8 border-2 border-[#111827] rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col items-center text-center transform hover:-translate-y-2 mt-4 md:mt-0">
+            <div className="absolute -top-4 bg-[#10B981] text-white text-xs font-black px-6 py-2 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
               Recomendado
             </div>
-            <div className="text-sm font-bold text-[#10B981] uppercase tracking-widest mb-4 mt-2">Nivel 2</div>
-            <h3 className="text-2xl font-bold text-[#111827] mb-2">Business</h3>
-            <div className="text-8xl font-extrabold text-gray-50 group-hover:text-blue-50 absolute -top-4 -right-4 -z-10 transition-colors opacity-60">35</div>
-            <p className="text-gray-500 mb-8 flex-grow text-sm leading-relaxed">
-              Análisis profundo de tu estrategia y propuesta de valor. Perfecto para empresas en crecimiento buscando escalar.
+            <div className="w-16 h-16 bg-[#111827] rounded-2xl flex items-center justify-center mb-6 mt-4 group-hover:scale-110 transition-transform">
+              <Rocket className="w-8 h-8 text-[#10B981]" />
+            </div>
+            <div className="text-xs font-bold text-[#10B981] uppercase tracking-widest mb-2">Nivel 2</div>
+            <h3 className="text-2xl font-black text-[#111827] mb-4">Business</h3>
+            <p className="text-gray-600 mb-8 flex-grow text-sm leading-relaxed font-medium">
+              Análisis profundo de tu estrategia y propuesta de valor. Perfecto para empresas en crecimiento buscando escalar agresivamente.
             </p>
-            <div className="w-full py-3 rounded-xl bg-[#111827] text-white font-semibold group-hover:bg-[#002244] transition-colors shadow-md">
-              Iniciar Business (35 Preguntas)
+            <div className="w-full py-4 rounded-xl bg-[#111827] text-white font-bold group-hover:bg-[#10B981] transition-colors shadow-md flex items-center justify-center gap-2">
+              35 Preguntas
+              <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </div>
           </button>
 
           {/* Card Nivel 3 */}
-          <button onClick={() => setLevel(50)} className="group relative bg-white p-8 border border-gray-200 rounded-2xl hover:border-[#111827] hover:shadow-xl transition-all flex flex-col items-center text-center overflow-hidden">
-            <div className="text-sm font-bold text-[#10B981] uppercase tracking-widest mb-4">Nivel 3</div>
-            <h3 className="text-2xl font-bold text-[#111827] mb-2">Full Transformation</h3>
-            <div className="text-8xl font-extrabold text-gray-50 group-hover:text-blue-50 absolute -top-4 -right-4 -z-10 transition-colors opacity-60">50</div>
+          <button onClick={() => setLevel(50)} className="group relative bg-white p-8 border border-gray-100 rounded-3xl hover:border-[#F97316]/50 hover:shadow-2xl hover:shadow-[#F97316]/10 transition-all duration-300 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-[#F97316]/10 transition-colors">
+              <Building2 className="w-8 h-8 text-gray-400 group-hover:text-[#F97316] transition-colors" />
+            </div>
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nivel 3</div>
+            <h3 className="text-2xl font-black text-[#111827] mb-4">Transformation</h3>
             <p className="text-gray-500 mb-8 flex-grow text-sm leading-relaxed">
-              Evaluación exhaustiva 360º de capacidades, tecnología y automatización. Visión corporativa total.
+              Evaluación exhaustiva 360º de capacidades, tecnología y automatización. Visión corporativa total para reestructurar el modelo.
             </p>
-            <div className="w-full py-3 rounded-xl bg-gray-50 text-[#111827] font-semibold group-hover:bg-[#111827] group-hover:text-white transition-colors">
-              Iniciar Full (50 Preguntas)
+            <div className="w-full py-4 rounded-xl bg-gray-50 text-[#111827] font-bold group-hover:bg-[#111827] group-hover:text-white transition-all flex items-center justify-center gap-2">
+              50 Preguntas
+              <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </div>
           </button>
         </div>
