@@ -1,13 +1,30 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY no está configurada en el entorno de servidor.');
+  }
+  return new OpenAI({ apiKey });
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
 
 export async function POST(req: Request) {
+  let openai: OpenAI;
+  try {
+    openai = getOpenAIClient();
+  } catch (err: unknown) {
+    console.error('Configuration error in diagnostic API:', getErrorMessage(err));
+    return NextResponse.json({ error: 'Error de configuración del servicio de inteligencia artificial' }, { status: 500 });
+  }
   try {
     const { answers, level, currentStep, businessContext } = await req.json();
 
@@ -68,7 +85,8 @@ FORMATO RESULTADO FINAL (JSON):
     const aiResponse = JSON.parse(completion.choices[0].message.content || '{}');
 
     return NextResponse.json(aiResponse);
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Error en ejecución del motor de diagnóstico:', getErrorMessage(error));
     return NextResponse.json({ error: 'Error en el motor de diagnóstico' }, { status: 500 });
   }
 }
