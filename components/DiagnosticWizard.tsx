@@ -1,7 +1,7 @@
 // components/DiagnosticWizard.tsx
 "use client";
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Zap, Rocket, Building2, ChevronRight, Activity, TrendingUp, Laptop, BrainCircuit } from 'lucide-react';
 
 const DiagnosticWizard = () => {
@@ -76,6 +76,7 @@ const DiagnosticWizard = () => {
     
     // Guardar log atómico para ML
     if (sessionId) {
+      const supabase = getSupabaseBrowserClient();
       await supabase.from('framework_logs').insert([{
         session_id: sessionId,
         step_number: step + 1,
@@ -105,6 +106,7 @@ const DiagnosticWizard = () => {
     setBusinessContext(context);
     
     try {
+      const supabase = getSupabaseBrowserClient();
       // 1. Crear la Sesión en Supabase
       const { data: sessionData, error } = await supabase
         .from('sessions')
@@ -118,8 +120,12 @@ const DiagnosticWizard = () => {
       if (!error && sessionData) {
         setSessionId(sessionData.id);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error creando sesión:", err);
+      if (err instanceof Error && err.name === 'EnvironmentConfigurationError') {
+        setApiError(`[Entorno No Configurado]: ${err.message}`);
+        return;
+      }
     }
 
     fetchNextQuestion([], context);
@@ -245,6 +251,7 @@ const DiagnosticWizard = () => {
     e.preventDefault();
     setSubmittingLead(true);
     try {
+      const supabase = getSupabaseBrowserClient();
       // Check if lead exists to avoid unique constraint / upsert issues
       let lead;
       const { data: existingLead } = await supabase
@@ -299,9 +306,10 @@ const DiagnosticWizard = () => {
       }
 
       setLeadSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error guardando en Supabase:', error);
-      alert(`Error DB: ${error.message || JSON.stringify(error)}`);
+      const msg = error instanceof Error ? error.message : JSON.stringify(error);
+      alert(`Error DB: ${msg}`);
     } finally {
       setSubmittingLead(false);
     }

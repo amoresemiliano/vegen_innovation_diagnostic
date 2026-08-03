@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { LayoutDashboard, List, BarChart3, MessageCircle, FileDown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -15,13 +15,16 @@ export default function KanbanDashboard() {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('kanban');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeads();
   }, []);
 
   const fetchLeads = async () => {
+    setErrorMessage(null);
     try {
+      const supabase = getSupabaseBrowserClient();
       const { data: leadsData, error } = await supabase
         .from('leads')
         .select('*')
@@ -58,8 +61,13 @@ export default function KanbanDashboard() {
       }
 
       setLeads(enhancedLeads);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching leads:', err);
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Error inesperado al consultar Supabase.');
+      }
     } finally {
       setLoading(false);
     }
@@ -117,13 +125,14 @@ export default function KanbanDashboard() {
 
   const moveLead = async (leadId, newStatus) => {
     try {
+      const supabase = getSupabaseBrowserClient();
       await supabase
         .from('leads')
         .update({ status: newStatus })
         .eq('id', leadId);
       
       setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error updating status:', err);
     }
   };
@@ -137,11 +146,12 @@ export default function KanbanDashboard() {
       setLeads(leads.map(l => l.id.toString() === draggableId ? { ...l, status: newStatus } : l));
       
       try {
+        const supabase = getSupabaseBrowserClient();
         await supabase
           .from('leads')
           .update({ status: newStatus })
           .eq('id', draggableId);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Error updating status:', err);
       }
     }
@@ -157,6 +167,12 @@ export default function KanbanDashboard() {
         <div>
           <h1 className="text-3xl font-black text-[#111827]">Dashboard Vegen Digital</h1>
           <p className="text-gray-500">Control operativo de leads de diagnóstico</p>
+          {errorMessage && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-left max-w-xl">
+              <p className="font-bold text-red-800 text-xs uppercase tracking-wider">Aviso del Sistema</p>
+              <p className="text-red-700 text-xs font-mono mt-1 break-words">{errorMessage}</p>
+            </div>
+          )}
         </div>
         <div className="flex bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
           <button 
